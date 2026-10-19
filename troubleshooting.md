@@ -1,66 +1,68 @@
-# Troubleshooting flows
+# Sorun giderme akışları
 
-Short, layer-by-layer checklists. Work from the bottom up and stop at the first layer that fails.
+> 🇬🇧 [English version](troubleshooting.en.md)
 
-Commands are shown as **Nokia** / **Huawei**. See the [README](README.md) for the full reference.
+Katman katman, kısa kontrol listeleri. Aşağıdan yukarıya doğru ilerleyin ve hata veren ilk katmanda durun.
+
+Komutlar **Nokia** / **Huawei** sırasıyla verilmiştir. Tam liste için [README](README.md)'ye bakın.
 
 ---
 
-## A pseudowire / Epipe is down
+## Pseudowire / Epipe ayakta değil
 
-1. **Customer port and SAP / AC up?**
+1. **Müşteri portu ve SAP / AC ayakta mı?**
    `show service id 100 sap 1/1/1:100` / `display interface GigabitEthernet0/1/0.100`
-2. **Transport to the remote PE?** Is there an LSP to the remote loopback?
+2. **Karşı PE'ye taşıma var mı?** Karşı loopback'e giden bir LSP var mı?
    `show router tunnel-table` / `display mpls lsp`
-3. **LSP actually forwards?**
+3. **LSP gerçekten trafik taşıyor mu?**
    `oam lsp-ping prefix 192.0.2.2/32` / `ping lsp ip 192.0.2.2 32`
-4. **Signalling (targeted LDP) up?**
+4. **Sinyalleşme (targeted LDP) ayakta mı?**
    `show router ldp session` / `display mpls ldp session`
-5. **Service parameters match on both ends?** Service MTU, VC ID and VC type must be identical.
+5. **Servis parametreleri iki uçta da aynı mı?** Servis MTU'su, VC ID ve VC tipi birebir aynı olmalı.
    `show service id 100 base` / `display mpls l2vc`
 
-> Most common root cause in practice: **MTU mismatch** between the two ends.
+> Sahada en sık karşılaşılan kök neden: iki uç arasındaki **MTU uyumsuzluğu**.
 
 ---
 
-## A VPLS customer reports intermittent loss
+## VPLS müşterisi aralıklı kayıp bildiriyor
 
-1. **MAC flapping?** The same MAC learned on different SAPs / peers in quick succession means a loop.
+1. **MAC flapping var mı?** Aynı MAC adresinin kısa aralıklarla farklı SAP'lerde ya da komşularda öğrenilmesi bir döngüye işaret eder.
    `show service id 100 fdb detail` / `display mac-address dynamic vsi CUST-A`
-2. **Broadcast storm?** Check the rate on the customer-facing ports.
+2. **Yayın fırtınası var mı?** Müşteriye bakan portlardaki trafik hızını kontrol edin.
    `monitor port 1/1/1 rate` / `display interface GigabitEthernet0/1/0`
-3. **Physical errors?** CRC / FCS, symbol errors, pause frames.
+3. **Fiziksel hata var mı?** CRC / FCS, symbol hataları, pause frame'ler.
    `show port 1/1/1 detail` / `display interface GigabitEthernet0/1/0`
-4. **Optics within range?**
+4. **Optik seviyeler normal aralıkta mı?**
    `show port 1/1/1 optical` / `display transceiver interface GigabitEthernet0/1/0 verbose`
 
-> A loop on the customer side spreads to every site of the VPLS. MAC limits and broadcast rate limits are your friends.
+> Müşteri tarafındaki bir döngü, VPLS'in bütün lokasyonlarına yayılır. MAC limitleri ve yayın trafiği sınırlamaları bu yüzden önemlidir.
 
 ---
 
-## A route is missing at one L3VPN site
+## Bir L3VPN lokasyonunda rota eksik
 
-1. **Route in the source VRF?**
+1. **Rota kaynak VRF'te var mı?**
    `show router 200 route-table` / `display ip routing-table vpn-instance CUST-B`
-2. **PE–CE session up?**
+2. **PE–CE oturumu ayakta mı?**
    `show router 200 bgp summary` / `display bgp vpnv4 vpn-instance CUST-B peer`
-3. **VPNv4 session between PEs up?**
+3. **PE'ler arasındaki VPNv4 oturumu ayakta mı?**
    `show router bgp summary family vpn-ipv4` / `display bgp vpnv4 all peer`
-4. **Route-targets match?** Export RT on the source must be imported on the destination.
-5. **Transport LSP to the next-hop PE?**
+4. **Route-target'lar eşleşiyor mu?** Kaynakta export edilen RT, hedefte import edilmelidir.
+5. **Next-hop PE'ye taşıma LSP'si var mı?**
    `show router tunnel-table` / `display tunnel-info all`
 
 ---
 
-## A link is "up" but users complain
+## Link "ayakta" ama kullanıcılar şikâyetçi
 
-1. Error counters climbing? Clear them and watch for a few minutes.
+1. Hata sayaçları artıyor mu? Sayaçları sıfırlayıp birkaç dakika izleyin.
    `clear port 1/1/1 statistics` / `reset counters interface GigabitEthernet0/1/0`
-2. Rx power close to the receiver sensitivity limit?
-3. LAG members balanced, or is one member saturated?
+2. Rx gücü alıcının hassasiyet sınırına yakın mı?
+3. LAG üyeleri dengeli mi, yoksa tek bir üye mi dolu?
    `show lag 1 detail` / `display eth-trunk 1`
-4. Pause frames present? Something downstream is congested.
+4. Pause frame var mı? Aşağı yöndeki bir nokta tıkanıyor demektir.
 
 ---
 
-*Examples use RFC 5737 documentation addresses and made-up service IDs.*
+*Örneklerde RFC 5737 belgeleme adresleri ve uydurma servis numaraları kullanılmıştır.*

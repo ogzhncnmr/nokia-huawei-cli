@@ -1,166 +1,166 @@
 # nokia-huawei-cli
 
-**Side-by-side Nokia SR OS ↔ Huawei VRP command reference for IP/MPLS operations and troubleshooting.**
+**IP/MPLS işletimi ve sorun giderme için Nokia SR OS ↔ Huawei VRP komutlarını yan yana gösteren başvuru kaynağı.**
 
-> 🇹🇷 Aynı işi yapan Nokia SR OS ve Huawei VRP komutlarını yan yana gösteren, sahada kullanılmak için hazırlanmış bir başvuru kaynağı. İki üreticinin bir arada bulunduğu operatör ağlarında çalışanlar için.
+> 🇬🇧 [English version](README.en.md)
 
-If you operate a multi-vendor carrier network, you constantly translate between two CLIs in your head. This repository does that translation for the commands you use every day.
+Birden fazla üreticinin bir arada çalıştığı operatör ağlarında, iki farklı CLI arasında sürekli kafanızda çeviri yaparsınız. Bu repo, her gün kullandığınız komutlar için o çeviriyi sizin yerinize yapar.
 
-- **Nokia** examples use the **classic CLI** (SR OS on 7750 SR / 7450 ESS / 7950 XRS).
-- **Huawei** examples use **VRP** on NE40E-class routers.
-- Port names follow each vendor's style: Nokia `1/1/1`, Huawei `GigabitEthernet0/1/0`.
-- All IP addresses are documentation ranges (RFC 5737) or private space; service IDs and names are made up.
+- **Nokia** örnekleri **klasik CLI** ile yazılmıştır (7750 SR / 7450 ESS / 7950 XRS üzerinde SR OS).
+- **Huawei** örnekleri NE40E sınıfı yönlendiricilerdeki **VRP** içindir.
+- Port adları her üreticinin kendi yazımına göredir: Nokia `1/1/1`, Huawei `GigabitEthernet0/1/0`.
+- Tüm IP adresleri belgeleme aralıklarından (RFC 5737) ya da özel adres alanından seçilmiştir; servis numaraları ve adları uydurmadır.
 
-> ⚠️ Syntax and output differ between software releases. Always check your platform's documentation before running commands on production equipment.
-
----
-
-## Contents
-
-1. [System & hardware](#1-system--hardware)
-2. [Ports, interfaces & optics](#2-ports-interfaces--optics)
-3. [Link aggregation & redundancy](#3-link-aggregation--redundancy)
-4. [IP routing: IGP & BGP](#4-ip-routing-igp--bgp)
-5. [MPLS: LDP, RSVP-TE & tunnels](#5-mpls-ldp-rsvp-te--tunnels)
-6. [L2 services: Epipe / VLL and VPLS / VSI](#6-l2-services-epipe--vll-and-vpls--vsi)
-7. [L3 services: VPRN / VPN instance](#7-l3-services-vprn--vpn-instance)
-8. [Reachability tests](#8-reachability-tests)
-9. [Logs & configuration](#9-logs--configuration)
-10. [Terminology map](#10-terminology-map)
-
-See also: **[Troubleshooting flows](troubleshooting.md)**
+> ⚠️ Komut sözdizimi ve çıktılar yazılım sürümüne göre değişebilir. Canlı cihazlarda çalıştırmadan önce mutlaka kendi platformunuzun dokümantasyonunu kontrol edin.
 
 ---
 
-## 1. System & hardware
+## İçindekiler
 
-| Task | Nokia SR OS | Huawei VRP |
+1. [Sistem ve donanım](#1-sistem-ve-donanım)
+2. [Portlar, arayüzler ve optikler](#2-portlar-arayüzler-ve-optikler)
+3. [Bağlantı birleştirme ve yedeklilik](#3-bağlantı-birleştirme-ve-yedeklilik)
+4. [IP yönlendirme: IGP ve BGP](#4-ip-yönlendirme-igp-ve-bgp)
+5. [MPLS: LDP, RSVP-TE ve tüneller](#5-mpls-ldp-rsvp-te-ve-tüneller)
+6. [L2 servisler: Epipe (VLL) ve VPLS (VSI)](#6-l2-servisler-epipe-vll-ve-vpls-vsi)
+7. [L3 servisler: VPRN ve VPN instance](#7-l3-servisler-vprn-ve-vpn-instance)
+8. [Erişilebilirlik testleri](#8-erişilebilirlik-testleri)
+9. [Loglar ve konfigürasyon](#9-loglar-ve-konfigürasyon)
+10. [Terim eşleştirme tablosu](#10-terim-eşleştirme-tablosu)
+
+Ayrıca bakınız: **[Sorun giderme akışları](troubleshooting.md)**
+
+---
+
+## 1. Sistem ve donanım
+
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| Software version | `show version` | `display version` |
-| System summary | `show system information` | `display device` |
-| Chassis, cards, MDAs | `show chassis` · `show card` · `show mda` | `display device` · `display elabel` |
-| CPU usage | `show system cpu` | `display cpu-usage` |
-| Memory | `show system memory-pools` | `display memory-usage` |
+| Yazılım sürümü | `show version` | `display version` |
+| Sistem özeti | `show system information` | `display device` |
+| Şasi, kartlar, MDA'lar | `show chassis` · `show card` · `show mda` | `display device` · `display elabel` |
+| CPU kullanımı | `show system cpu` | `display cpu-usage` |
+| Bellek | `show system memory-pools` | `display memory-usage` |
 
-## 2. Ports, interfaces & optics
+## 2. Portlar, arayüzler ve optikler
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| All ports, short | `show port` | `display interface brief` |
-| One port in detail (errors, counters) | `show port 1/1/1 detail` | `display interface GigabitEthernet0/1/0` |
-| Optical levels (Tx/Rx power) | `show port 1/1/1 optical` | `display transceiver interface GigabitEthernet0/1/0 verbose` |
-| Live traffic rate | `monitor port 1/1/1 rate` | `display interface GigabitEthernet0/1/0` (input/output rate lines) |
-| Clear counters | `clear port 1/1/1 statistics` | `reset counters interface GigabitEthernet0/1/0` |
-| L3 interfaces | `show router interface` | `display ip interface brief` |
-| ARP table | `show router arp` | `display arp all` |
+| Tüm portlar, kısa liste | `show port` | `display interface brief` |
+| Tek port, ayrıntılı (hatalar, sayaçlar) | `show port 1/1/1 detail` | `display interface GigabitEthernet0/1/0` |
+| Optik seviyeler (Tx/Rx gücü) | `show port 1/1/1 optical` | `display transceiver interface GigabitEthernet0/1/0 verbose` |
+| Anlık trafik hızı | `monitor port 1/1/1 rate` | `display interface GigabitEthernet0/1/0` (input/output rate satırları) |
+| Sayaçları sıfırlama | `clear port 1/1/1 statistics` | `reset counters interface GigabitEthernet0/1/0` |
+| L3 arayüzler | `show router interface` | `display ip interface brief` |
+| ARP tablosu | `show router arp` | `display arp all` |
 
-**What to look for:** CRC / FCS errors, symbol errors and pause frames usually point at a physical-layer problem (dirty optic, bad patch cord, speed or duplex mismatch) long before the link actually goes down.
+**Nelere bakmalı:** CRC / FCS hataları, symbol hataları ve pause frame'ler, link düşmeden çok önce fiziksel katmanda bir sorun olduğunu gösterir: kirli optik, kötü patch kablo, hız ya da duplex uyumsuzluğu.
 
-## 3. Link aggregation & redundancy
+## 3. Bağlantı birleştirme ve yedeklilik
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| LAG / Eth-Trunk summary | `show lag` | `display eth-trunk` |
-| One bundle in detail | `show lag 1 detail` | `display eth-trunk 1` |
-| Multi-chassis LAG state | `show redundancy multi-chassis mc-lag peer 192.0.2.2` | `display e-trunk 1` |
+| LAG / Eth-Trunk özeti | `show lag` | `display eth-trunk` |
+| Tek bir bundle, ayrıntılı | `show lag 1 detail` | `display eth-trunk 1` |
+| Çoklu şasi LAG durumu | `show redundancy multi-chassis mc-lag peer 192.0.2.2` | `display e-trunk 1` |
 | VRRP | `show router vrrp instance` | `display vrrp brief` |
 
-Nokia **MC-LAG** and Huawei **E-Trunk** solve the same problem: a single LAG towards the customer, terminated on two different routers.
+Nokia **MC-LAG** ve Huawei **E-Trunk** aynı sorunu çözer: müşteriye doğru tek bir LAG, iki farklı yönlendiricide sonlandırılır.
 
-## 4. IP routing: IGP & BGP
+## 4. IP yönlendirme: IGP ve BGP
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| Routing table | `show router route-table` | `display ip routing-table` |
-| Routes inside a prefix | `show router route-table 10.0.0.0/24 longer` | `display ip routing-table 10.0.0.0 24 longer-match` |
-| IS-IS adjacencies | `show router isis adjacency` | `display isis peer` |
-| OSPF neighbours | `show router ospf neighbor` | `display ospf peer brief` |
-| BGP summary | `show router bgp summary` | `display bgp peer` |
-| One BGP neighbour | `show router bgp neighbor 192.0.2.2` | `display bgp peer 192.0.2.2 verbose` |
-| VPNv4 BGP peers | `show router bgp summary family vpn-ipv4` | `display bgp vpnv4 all peer` |
+| Yönlendirme tablosu | `show router route-table` | `display ip routing-table` |
+| Bir önekin içindeki rotalar | `show router route-table 10.0.0.0/24 longer` | `display ip routing-table 10.0.0.0 24 longer-match` |
+| IS-IS komşulukları | `show router isis adjacency` | `display isis peer` |
+| OSPF komşuları | `show router ospf neighbor` | `display ospf peer brief` |
+| BGP özeti | `show router bgp summary` | `display bgp peer` |
+| Tek bir BGP komşusu | `show router bgp neighbor 192.0.2.2` | `display bgp peer 192.0.2.2 verbose` |
+| VPNv4 BGP komşuları | `show router bgp summary family vpn-ipv4` | `display bgp vpnv4 all peer` |
 
-## 5. MPLS: LDP, RSVP-TE & tunnels
+## 5. MPLS: LDP, RSVP-TE ve tüneller
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| LDP sessions | `show router ldp session` | `display mpls ldp session` |
-| LDP label bindings | `show router ldp bindings` | `display mpls ldp lsp` |
-| All LSPs | `show router tunnel-table` | `display mpls lsp` |
-| RSVP-TE LSPs | `show router mpls lsp` | `display mpls te tunnel-interface` |
-| RSVP sessions | `show router rsvp session` | `display mpls rsvp-te session` |
-| Tunnels available to services | `show router tunnel-table` | `display tunnel-info all` |
+| LDP oturumları | `show router ldp session` | `display mpls ldp session` |
+| LDP etiket eşleşmeleri | `show router ldp bindings` | `display mpls ldp lsp` |
+| Tüm LSP'ler | `show router tunnel-table` | `display mpls lsp` |
+| RSVP-TE LSP'ler | `show router mpls lsp` | `display mpls te tunnel-interface` |
+| RSVP oturumları | `show router rsvp session` | `display mpls rsvp-te session` |
+| Servislerin kullanabileceği tüneller | `show router tunnel-table` | `display tunnel-info all` |
 
-**Mental model:** if the LDP session is up but the LSP to a remote PE is missing, check that the remote loopback is in the IGP first. LDP follows the IGP.
+**Akılda tutun:** LDP oturumu ayakta ama karşı PE'ye giden LSP yoksa, önce karşı loopback adresinin IGP'de olup olmadığına bakın. LDP, IGP'yi takip eder.
 
-## 6. L2 services: Epipe / VLL and VPLS / VSI
+## 6. L2 servisler: Epipe (VLL) ve VPLS (VSI)
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| List services | `show service service-using` | `display vsi` · `display mpls l2vc brief` |
-| Point-to-point (Epipe / VLL) state | `show service id 100 base` | `display mpls l2vc` |
-| Everything about one service | `show service id 100 all` | `display vsi name CUST-A verbose` |
-| Customer attachment (SAP / AC) | `show service id 100 sap 1/1/1:100` | `display interface GigabitEthernet0/1/0.100` |
-| Service tunnels (SDP / PW peers) | `show service sdp` | `display vsi name CUST-A peer-info` |
-| VPLS MAC table | `show service id 100 fdb detail` | `display mac-address dynamic vsi CUST-A` |
+| Servisleri listeleme | `show service service-using` | `display vsi` · `display mpls l2vc brief` |
+| Noktadan noktaya (Epipe / VLL) durumu | `show service id 100 base` | `display mpls l2vc` |
+| Tek servisin her şeyi | `show service id 100 all` | `display vsi name CUST-A verbose` |
+| Müşteri bağlantı noktası (SAP / AC) | `show service id 100 sap 1/1/1:100` | `display interface GigabitEthernet0/1/0.100` |
+| Servis tünelleri (SDP / PW komşuları) | `show service sdp` | `display vsi name CUST-A peer-info` |
+| VPLS MAC tablosu | `show service id 100 fdb detail` | `display mac-address dynamic vsi CUST-A` |
 
-**Common pitfalls:** a pseudowire that refuses to come up is very often an MTU mismatch between the two ends. In VPLS, MAC flapping is usually the first sign of a loop on the customer side.
+**Sık karşılaşılan tuzaklar:** Ayağa kalkmayan bir pseudowire'ın en sık nedeni iki uç arasındaki MTU uyumsuzluğudur. VPLS'te MAC flapping (aynı MAC'in sürekli farklı yerlerde görülmesi) genellikle müşteri tarafındaki bir döngünün ilk işaretidir.
 
-## 7. L3 services: VPRN / VPN instance
+## 7. L3 servisler: VPRN ve VPN instance
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| List L3VPNs | `show service service-using vprn` | `display ip vpn-instance` |
-| VRF routing table | `show router 200 route-table` | `display ip routing-table vpn-instance CUST-B` |
-| VRF BGP (PE–CE) | `show router 200 bgp summary` | `display bgp vpnv4 vpn-instance CUST-B peer` |
-| VRF ARP | `show router 200 arp` | `display arp vpn-instance CUST-B` |
+| L3VPN'leri listeleme | `show service service-using vprn` | `display ip vpn-instance` |
+| VRF yönlendirme tablosu | `show router 200 route-table` | `display ip routing-table vpn-instance CUST-B` |
+| VRF içi BGP (PE–CE) | `show router 200 bgp summary` | `display bgp vpnv4 vpn-instance CUST-B peer` |
+| VRF ARP tablosu | `show router 200 arp` | `display arp vpn-instance CUST-B` |
 
-**Common pitfall:** a route visible at one site but not another usually means a wrong or missing route-target.
+**Sık karşılaşılan tuzak:** Bir rota bir lokasyonda görünüp diğerinde görünmüyorsa, sebep çoğu zaman yanlış ya da eksik bir route-target'tır.
 
-## 8. Reachability tests
+## 8. Erişilebilirlik testleri
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
 | Ping | `ping 192.0.2.10` | `ping 192.0.2.10` |
-| Ping inside a VRF | `ping 10.1.1.1 router 200` | `ping -vpn-instance CUST-B 10.1.1.1` |
-| Traceroute inside a VRF | `traceroute 10.1.1.1 router 200` | `tracert -vpn-instance CUST-B 10.1.1.1` |
-| Test an LDP LSP | `oam lsp-ping prefix 192.0.2.2/32` | `ping lsp ip 192.0.2.2 32` |
-| Trace an LDP LSP | `oam lsp-trace prefix 192.0.2.2/32` | `tracert lsp ip 192.0.2.2 32` |
-| Test a service tunnel (SDP) | `oam sdp-ping 10` | — (check `display mpls l2vc` / `display vsi ... peer-info`) |
+| VRF içinden ping | `ping 10.1.1.1 router 200` | `ping -vpn-instance CUST-B 10.1.1.1` |
+| VRF içinden traceroute | `traceroute 10.1.1.1 router 200` | `tracert -vpn-instance CUST-B 10.1.1.1` |
+| LDP LSP testi | `oam lsp-ping prefix 192.0.2.2/32` | `ping lsp ip 192.0.2.2 32` |
+| LDP LSP izleme | `oam lsp-trace prefix 192.0.2.2/32` | `tracert lsp ip 192.0.2.2 32` |
+| Servis tüneli (SDP) testi | `oam sdp-ping 10` | — (`display mpls l2vc` / `display vsi ... peer-info` ile kontrol edin) |
 
-## 9. Logs & configuration
+## 9. Loglar ve konfigürasyon
 
-| Task | Nokia SR OS | Huawei VRP |
+| İşlem | Nokia SR OS | Huawei VRP |
 |---|---|---|
-| Recent logs | `show log log-id 99` | `display logbuffer` |
-| Active alarms | usually monitored in NSP / SAM 5620 | `display alarm active` |
-| Running configuration | `admin display-config` | `display current-configuration` |
-| Save configuration | `admin save` | `save` |
-| Saved (startup) configuration | `file type cf3:\config.cfg` | `display saved-configuration` |
-| Filter the configuration | `admin display-config \| match "service" context all` | `display current-configuration \| include vsi` |
+| Son loglar | `show log log-id 99` | `display logbuffer` |
+| Aktif alarmlar | genellikle NSP / SAM 5620 üzerinden izlenir | `display alarm active` |
+| Çalışan konfigürasyon | `admin display-config` | `display current-configuration` |
+| Konfigürasyonu kaydetme | `admin save` | `save` |
+| Kayıtlı (açılış) konfigürasyonu | `file type cf3:\config.cfg` | `display saved-configuration` |
+| Konfigürasyonu filtreleme | `admin display-config \| match "service" context all` | `display current-configuration \| include vsi` |
 
-## 10. Terminology map
+## 10. Terim eşleştirme tablosu
 
-| Concept | Nokia | Huawei |
+| Kavram | Nokia | Huawei |
 |---|---|---|
-| Point-to-point L2 service | Epipe (VLL) | VLL / PWE3 (`mpls l2vc`) |
-| Multipoint L2 service | VPLS | VSI |
+| Noktadan noktaya L2 servis | Epipe (VLL) | VLL / PWE3 (`mpls l2vc`) |
+| Çok noktalı L2 servis | VPLS | VSI |
 | L3VPN | VPRN | VPN instance |
-| Routed internet service | IES | Interface in the public routing table |
-| Customer attachment point | SAP | AC (attachment circuit) |
-| Service transport tunnel | SDP | PW over an LSP / tunnel policy |
-| Multi-chassis LAG | MC-LAG | E-Trunk |
-| Link aggregation | LAG | Eth-Trunk |
-| Element / network management | SAM 5620 / NSP | U2000 / iMaster NCE |
+| Yönlendirilmiş internet servisi | IES | Genel yönlendirme tablosundaki arayüz |
+| Müşteri bağlantı noktası | SAP | AC (attachment circuit) |
+| Servis taşıma tüneli | SDP | LSP üzerinde PW / tunnel policy |
+| Çoklu şasi LAG | MC-LAG | E-Trunk |
+| Bağlantı birleştirme | LAG | Eth-Trunk |
+| Eleman / ağ yönetimi | SAM 5620 / NSP | U2000 / iMaster NCE |
 
 ---
 
-## Contributing
+## Katkıda bulunma
 
-Spotted a command that changed in your release, or want to add a section (EVPN, segment routing, multicast, QoS)? Pull requests are welcome. Please:
+Kendi sürümünüzde değişmiş bir komut mu gördünüz, ya da yeni bir bölüm (EVPN, segment routing, multicast, QoS) eklemek mi istiyorsunuz? Pull request'ler memnuniyetle karşılanır. Lütfen:
 
-- keep every example free of real addresses, hostnames and customer data,
-- mention the software release you tested on when it matters.
+- örneklerde gerçek adres, hostname ya da müşteri verisi kullanmayın,
+- önemliyse test ettiğiniz yazılım sürümünü belirtin.
 
-## License
+## Lisans
 
-[MIT](LICENSE) © Oğuzhan Canmar. Nokia and Huawei are trademarks of their respective owners; this project is not affiliated with either company.
+[MIT](LICENSE) © Oğuzhan Canmar. Nokia ve Huawei, sahiplerinin ticari markalarıdır; bu proje iki şirketle de bağlantılı değildir.
