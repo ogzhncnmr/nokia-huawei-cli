@@ -1,5 +1,6 @@
 # Troubleshooting flows
-n> 🇹🇷 [Türkçe sürüm](troubleshooting.md)
+
+> 🇹🇷 [Türkçe sürüm](troubleshooting.md)
 
 Short, layer-by-layer checklists. Work from the bottom up and stop at the first layer that fails.
 
